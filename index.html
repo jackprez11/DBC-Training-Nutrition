@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DBC Training">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>DBC Training</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f5;
+    --bg3: #efefef;
+    --text: #1a1a1a;
+    --text2: #666666;
+    --text3: #999999;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --accent: #1a1a1a;
+    --accent-text: #ffffff;
+    --radius-md: 8px;
+    --radius-lg: 14px;
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --bg2: #2c2c2e;
+      --bg3: #3a3a3c;
+      --text: #f2f2f7;
+      --text2: #aeaeb2;
+      --text3: #636366;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --accent: #f2f2f7;
+      --accent-text: #1c1c1e;
+    }
+  }
+  html, body { height: 100%; background: var(--bg3); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: var(--text); }
+  .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg3); display: flex; flex-direction: column; }
+
+  /* Header */
+  .header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: calc(var(--safe-top) + 14px) 20px 12px; position: sticky; top: 0; z-index: 10; }
+  .header-name { font-size: 12px; color: var(--text2); margin-bottom: 2px; }
+  .header-date { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+
+  /* Day strip */
+  .day-strip { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 10px 16px; display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .day-strip::-webkit-scrollbar { display: none; }
+  .day-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 11px; border-radius: var(--radius-md); border: 0.5px solid var(--border); cursor: pointer; background: var(--bg); transition: background 0.15s; }
+  .day-pill.active { background: var(--accent); border-color: var(--accent); }
+  .day-pill .dow { font-size: 10px; color: var(--text2); }
+  .day-pill.active .dow { color: rgba(255,255,255,0.6); }
+  .day-pill.active .dow-dark { color: rgba(0,0,0,0.45); }
+  .day-pill .num { font-size: 15px; font-weight: 500; color: var(--text); }
+  .day-pill.active .num { color: var(--accent-text); }
+  .day-pill.has-workout::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--text3); margin-top: 1px; }
+  .day-pill.active.has-workout::after { background: rgba(255,255,255,0.4); }
+
+  /* Tabs */
+  .tabs { display: flex; background: var(--bg); border-bottom: 0.5px solid var(--border); }
+  .tab { flex: 1; padding: 11px; text-align: center; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s; }
+  .tab.active { color: var(--text); font-weight: 500; border-bottom-color: var(--accent); }
+
+  /* Content */
+  .content { padding: 14px; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(var(--safe-bottom) + 20px); flex: 1; }
+
+  /* Cards */
+  .card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); overflow: hidden; }
+  .card-header { padding: 13px 16px 11px; border-bottom: 0.5px solid var(--border); }
+  .card-label { font-size: 11px; color: var(--text2); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-title { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.2px; }
+  .card-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+  /* Section labels */
+  .section-label { font-size: 10px; color: var(--text3); padding: 8px 16px 2px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
+  .superset-label { font-size: 11px; color: var(--text2); padding: 6px 16px 2px; font-style: italic; }
+
+  /* Exercise rows */
+  .ex-list { }
+  .ex-row { display: flex; align-items: center; padding: 10px 16px; border-bottom: 0.5px solid var(--border); gap: 10px; }
+  .ex-row:last-child { border-bottom: none; }
+  .ex-num { font-size: 11px; color: var(--text3); min-width: 20px; font-variant-numeric: tabular-nums; }
+  .ex-name { font-size: 14px; color: var(--text); flex: 1; }
+  .ex-sets { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .ex-rest { font-size: 11px; padding: 2px 7px; background: var(--bg2); color: var(--text2); border-radius: 5px; white-space: nowrap; border: 0.5px solid var(--border); }
+
+  /* Equipment footer */
+  .equip-footer { padding: 9px 16px; border-top: 0.5px solid var(--border); display: flex; align-items: center; gap: 5px; }
+  .equip-text { font-size: 12px; color: var(--text3); }
+
+  /* Rest card */
+  .rest-card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 40px 20px; text-align: center; }
+  .rest-icon { font-size: 36px; margin-bottom: 10px; }
+  .rest-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .rest-sub { font-size: 14px; color: var(--text2); }
+
+  /* Nutrition */
+  .meal-card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); overflow: hidden; }
+  .meal-header { padding: 11px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .meal-icon { font-size: 20px; }
+  .meal-time { font-size: 11px; color: var(--text2); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .meal-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .meal-body { padding: 11px 16px; }
+  .meal-options { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .opt-btn { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 0.5px solid var(--border2); cursor: pointer; background: var(--bg2); color: var(--text2); font-family: inherit; transition: all 0.12s; }
+  .opt-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .meal-item { font-size: 13px; color: var(--text); padding: 4px 0; display: flex; align-items: baseline; gap: 7px; line-height: 1.4; }
+  .meal-item::before { content: "·"; color: var(--text3); flex-shrink: 0; }
+  .meal-note { font-size: 12px; color: var(--text2); margin-top: 9px; padding-top: 9px; border-top: 0.5px solid var(--border); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-name">Jack Presnell · DBC Training</div>
+    <div class="header-date" id="header-date"></div>
+  </div>
+  <div class="day-strip" id="day-strip"></div>
+  <div class="tabs">
+    <div class="tab active" id="tab-workout" onclick="switchTab('workout')">💪 Workout</div>
+    <div class="tab" id="tab-nutrition" onclick="switchTab('nutrition')">🥗 Nutrition</div>
+  </div>
+  <div class="content" id="main-content"></div>
+</div>
+
+<script>
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+const SCHEDULE = {
+  0: 'rest',
+  1: 'upper_strength_power',
+  2: 'lower_strength_power',
+  3: 'rest',
+  4: 'lower_strength_core',
+  5: 'full_body_core_mobility',
+  6: 'upper_volume'
+};
+
+const WORKOUTS = {
+  upper_strength_power: {
+    label: 'Day 1', title: 'Upper Body Strength & Power',
+    equipment: 'Barbell, Cable, Dumbbell, Medicine Ball, Pull-Up Bar, Band',
+    sections: [
+      { type: 'warmup', exercises: [
+        { name: 'Shoulder CAR', sets: '2×5 each side', rest: '30s' }
+      ]},
+      { type: 'main', exercises: [
+        { num: '1', name: 'Medicine Ball Slam', sets: '3×5', rest: '90s' },
+        { num: '2', name: 'Barbell Bench Press', sets: '4×4–6', rest: '120s' },
+        { num: '3', name: 'Weighted Pull-Up', sets: '4×4–6', rest: '120s' },
+        { num: '4A', name: 'Incline Dumbbell Press', sets: '3×8–10', rest: null, superset: true },
+        { num: '4B', name: 'Seated Cable Rows', sets: '3×10–12', rest: null, superset: true },
+        { num: '5A', name: 'Pallof Press', sets: '3×10 each side', rest: '45s', superset: true },
+        { num: '5B', name: 'Dead Bug', sets: '3×8–10 each side', rest: '30s', superset: true }
+      ]},
+      { type: 'cooldown', exercises: [
+        { name: 'Partner Chest Stretch', sets: '2×30s' },
+        { name: 'Band Lat Stretch', sets: '2×30s' }
+      ]}
+    ]
+  },
+  lower_strength_power: {
+    label: 'Day 2', title: 'Lower Body Strength & Power',
+    equipment: 'Barbell, Dumbbell, GHD, Plyo Box',
+    sections: [
+      { type: 'warmup', exercises: [
+        { name: 'Quadruped Hip CAR', sets: '2×5 each side', rest: '30s' },
+        { name: 'Leg CARs Routine', sets: '2×5 each side', rest: '30s' }
+      ]},
+      { type: 'main', exercises: [
+        { num: '1A', name: 'Back Squat', sets: '4×4–6', rest: '120s', superset: true },
+        { num: '1B', name: 'Box Jump', sets: '4×3–5', rest: '90s', superset: true },
+        { num: '2', name: 'Dumbbell Bulgarian Split Squat', sets: '3×8 each side', rest: '90s' },
+        { num: '3', name: 'Romanian Deadlift', sets: '3×8–10', rest: '90s' },
+        { num: '4', name: 'Suitcase Calf Raise', sets: '3×12–15', rest: '60s' },
+        { num: '5', name: 'Dead Bug', sets: '3×10 each side', rest: '60s' },
+        { num: '6A', name: 'RKC Plank', sets: '3 sets (20–30s)', rest: null, superset: true },
+        { num: '6B', name: 'GHD Back Extension', sets: '3×12–15', rest: null, superset: true }
+      ]},
+      { type: 'cooldown', exercises: [
+        { name: 'Kneeling Hip Flexor Stretch', sets: '2×30s each side' },
+        { name: 'Hamstring Stretch', sets: '2×30s each side' }
+      ]}
+    ]
+  },
+  upper_volume: {
+    label: 'Day 3', title: 'Upper Body Volume',
+    equipment: 'Cable Machine, Dumbbell',
+    sections: [
+      { type: 'warmup', exercises: [
+        { name: 'Shoulder CAR', sets: '2×5 each side', rest: '30s' }
+      ]},
+      { type: 'main', exercises: [
+        { num: '1', name: 'Dumbbell Bench Press', sets: '3×8–10', rest: '90s' },
+        { num: '2', name: 'Cable Neutral Grip Lat Pulldown', sets: '3×10–12', rest: '90s' },
+        { num: '3', name: 'Machine Chest Press', sets: '3×10–12', rest: '75s' },
+        { num: '4', name: 'Single Arm Dumbbell Row', sets: '3×10–12', rest: '75s' },
+        { num: '5A', name: 'Dumbbell Lateral Raise', sets: '3×12–15', rest: '30s', superset: true },
+        { num: '5B', name: 'Cable Face Pull', sets: '3×12–15', rest: '45s', superset: true },
+        { num: '6A', name: 'Cable Biceps Curl', sets: '2×10–12', rest: '30s', superset: true },
+        { num: '6B', name: 'Cable Triceps Extension', sets: '2×10–12', rest: '30s', superset: true }
+      ]}
+    ]
+  },
+  lower_strength_core: {
+    label: 'Day 4', title: 'Lower Body Strength + Core',
+    equipment: 'Barbell',
+    sections: [
+      { type: 'warmup', exercises: [
+        { name: 'Standing Hip CAR', sets: '2×5 each side', rest: '30s' }
+      ]},
+      { type: 'main', exercises: [
+        { num: '1', name: 'Barbell Hip Thrust', sets: '4×6–8', rest: '120s' },
+        { num: '2', name: 'Dumbbell Quads Bulgarian Split Squat', sets: '3×8–10 each side', rest: '90s' },
+        { num: '3', name: 'Machine Reclined Leg Extension', sets: '3×12–15', rest: '75s' },
+        { num: '4A', name: 'Cable Woodchopper (Low to High)', sets: '3×10 each side', rest: '30s', superset: true },
+        { num: '4B', name: 'Plank', sets: '3 sets (30–45s)', rest: '30s', superset: true }
+      ]}
+    ]
+  },
+  full_body_core_mobility: {
+    label: 'Day 5', title: 'Full Body + Core + Mobility',
+    equipment: 'Barbell',
+    sections: [
+      { type: 'warmup', exercises: [
+        { name: 'Standing Hip CAR', sets: '2×5 each side', rest: '30s' }
+      ]},
+      { type: 'main', exercises: [
+        { num: '1', name: 'Barbell Hip Thrust', sets: '3×8', rest: '120s' },
+        { num: '2', name: 'Barbell Bulgarian Split Squat', sets: '2×8–10 each side', rest: '90s' },
+        { num: '3', name: 'Cable Woodchopper (Low to High)', sets: '3×10 each side', rest: '45s' },
+        { num: '4A', name: 'Plank', sets: '3 sets (40–50s)', rest: '30s', superset: true },
+        { num: '4B', name: 'Side Plank', sets: '3 sets (30–40s each side)', rest: null, superset: true }
+      ]},
+      { type: 'cooldown', exercises: [
+        { name: 'Standing Hip Flexor Stretch', sets: '2×30s each side' },
+        { name: 'Thoracic Floor Rotation Book Opener', sets: '2×30s each side' }
+      ]}
+    ]
+  }
+};
+
+const NUTRITION = {
+  preWorkout: { icon: '⚡', time: 'Pre-Workout', name: 'Pre-Workout Fuel', options: [{ label: 'Standard', items: ['Fruit — 150g (banana, apple, or berries)', 'Water — 12–16 oz', 'Nuun electrolytes — 1 tablet (optional, heavy sweat days)'] }], note: null },
+  breakfast: { icon: '🌅', time: 'Breakfast', name: 'Breakfast', options: [{ label: 'Option A — Yogurt Bowl', items: ['Low-fat Greek yogurt — 150g', 'Whey protein (Orgain) — 15g (~½ scoop)', 'Oats (dry) — 40g (~½ cup)', 'Berries — 150g (~1 cup)', 'Nuts — 15g (~1 small handful)'] }, { label: 'Option B — Eggs & Toast', items: ['Sourdough bread — 100g (2 slices)', 'Whole eggs — 2 large', 'Egg whites — 150ml (~5 egg whites)'] }], note: 'Opt A: Can swap Skyr or Fage for Greek yogurt. Oats can be soaked overnight. Opt B: Non-stick pan, no oil.' },
+  lunch: { icon: '🥗', time: 'Lunch', name: 'Lunch', options: [{ label: 'Template', items: ['Lean protein — 150g cooked (chicken, turkey, steak, salmon, tuna)', 'Vegetables — unlimited (greens, peppers, broccoli, etc.)', 'Carb: rice 120–150g OR pasta 110–140g OR quinoa 120–150g OR potato 180–220g'] }], note: 'On the go: turkey sandwich + side salad, or burrito bowl (double veggies, normal rice, lean protein). Max 1 tbsp olive oil. No sauces or cheese.' },
+  pmSnack: { icon: '🍎', time: 'PM Snack', name: 'PM Snack', options: [{ label: 'Option A — Eggs', items: ['2 whole eggs', 'Fruit — 150g (~1 medium apple or 1 cup)'] }, { label: 'Option B — Yogurt', items: ["Siggi's yogurt — 150g", 'Fruit — 150g (~1 medium apple or 1 cup)'] }, { label: 'Busy day', items: ['Fairlife protein shake — 1 bottle (26–30g protein)', 'Fruit — 150g (optional)'] }], note: "Include eggs (Option A) only if you didn't have eggs at breakfast." },
+  dinner: { icon: '🍽️', time: 'Dinner', name: 'Dinner', options: [{ label: 'Template', items: ['Lean protein — 150g cooked (steak, chicken, turkey, salmon)', 'Vegetables — unlimited', 'Carb: rice 120–150g OR pasta 110–140g OR quinoa 120–150g OR potato 180–220g'] }], note: 'Same rules as lunch: 1 tbsp olive oil max. Avoid sauces, dressings, cream, cheese.' }
+};
+
+let currentDay = new Date().getDay();
+let currentTab = 'workout';
+let mealOptionState = {};
+
+function init() {
+  buildDayStrip();
+  updateHeaderDate(new Date());
+  renderContent();
+}
+
+function buildDayStrip() {
+  const strip = document.getElementById('day-strip');
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - today.getDay());
+  strip.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const hasWorkout = SCHEDULE[i] !== 'rest';
+    const pill = document.createElement('div');
+    pill.className = 'day-pill' + (i === currentDay ? ' active' : '') + (hasWorkout ? ' has-workout' : '');
+    pill.innerHTML = `<span class="dow">${DAYS[i]}</span><span class="num">${d.getDate()}</span>`;
+    const captured = { i, d: new Date(d) };
+    pill.onclick = () => selectDay(captured.i, captured.d);
+    strip.appendChild(pill);
+  }
+}
+
+function updateHeaderDate(d) {
+  document.getElementById('header-date').textContent = `${DAY_NAMES[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function selectDay(dayIdx, dateObj) {
+  currentDay = dayIdx;
+  document.querySelectorAll('.day-pill').forEach((p, i) => p.classList.toggle('active', i === dayIdx));
+  updateHeaderDate(dateObj);
+  renderContent();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-workout').classList.toggle('active', tab === 'workout');
+  document.getElementById('tab-nutrition').classList.toggle('active', tab === 'nutrition');
+  renderContent();
+}
+
+function renderContent() {
+  const container = document.getElementById('main-content');
+  currentTab === 'workout' ? renderWorkout(container) : renderNutrition(container);
+}
+
+function renderWorkout(container) {
+  const type = SCHEDULE[currentDay];
+  if (type === 'rest') {
+    container.innerHTML = `<div class="rest-card"><div class="rest-icon">🌙</div><div class="rest-title">Rest Day</div><div class="rest-sub">Recovery is part of the program.</div></div>`;
+    return;
+  }
+  const w = WORKOUTS[type];
+  let html = `<div class="card"><div class="card-header"><div class="card-label">${w.label}</div><div class="card-title">${w.title}</div></div>`;
+  let inSuperset = false;
+  w.sections.forEach(section => {
+    const labelText = section.type === 'warmup' ? 'Warm-Up' : section.type === 'cooldown' ? 'Cool Down' : 'Main Session';
+    html += `<div class="section-label">${labelText}</div><div class="ex-list">`;
+    inSuperset = false;
+    section.exercises.forEach(ex => {
+      const numStr = String(ex.num || '');
+      const isLettered = /[AB]$/.test(numStr);
+      if (isLettered && !inSuperset) {
+        html += `</div><div class="superset-label">Superset</div><div class="ex-list">`;
+        inSuperset = true;
+      } else if (!isLettered) {
+        inSuperset = false;
+      }
+      html += `<div class="ex-row"><span class="ex-num">${ex.num || ''}</span><span class="ex-name">${ex.name}</span><span class="ex-sets">${ex.sets || ''}</span>${ex.rest ? `<span class="ex-rest">${ex.rest}</span>` : ''}</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `<div class="equip-footer"><span class="equip-text">🔧 ${w.equipment}</span></div></div>`;
+  container.innerHTML = html;
+}
+
+function renderNutrition(container) {
+  const meals = Object.entries(NUTRITION).map(([key, val]) => ({ key, ...val }));
+  let html = '';
+  meals.forEach(meal => {
+    if (mealOptionState[meal.key] === undefined) mealOptionState[meal.key] = 0;
+    const selectedIdx = mealOptionState[meal.key];
+    const selected = meal.options[selectedIdx];
+    html += `<div class="meal-card"><div class="meal-header"><span class="meal-icon">${meal.icon}</span><div><div class="meal-time">${meal.time}</div><div class="meal-name">${meal.name}</div></div></div><div class="meal-body">`;
+    if (meal.options.length > 1) {
+      html += `<div class="meal-options">` + meal.options.map((opt, i) => `<button class="opt-btn ${i === selectedIdx ? 'active' : ''}" onclick="selectMealOption('${meal.key}', ${i})">${opt.label}</button>`).join('') + `</div>`;
+    }
+    selected.items.forEach(item => { html += `<div class="meal-item">${item}</div>`; });
+    if (meal.note) html += `<div class="meal-note">${meal.note}</div>`;
+    html += `</div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function selectMealOption(mealKey, idx) {
+  mealOptionState[mealKey] = idx;
+  renderNutrition(document.getElementById('main-content'));
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+init();
+</script>
+</body>
+</html>
